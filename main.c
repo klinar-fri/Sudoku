@@ -3,15 +3,15 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-void drawGrid(Color squareColor){
-    int recY = 40;
+void drawGrid(Color squareColor, Rectangle recArr[9][9], int** recColArr){
     for(int i = 0; i < 9; i++){
-        int recX = 20;
         for(int j = 0; j < 9; j++){
-            DrawRectangleLines(recX, recY, 50, 50, squareColor);
-            recX += 49;
+            if(recColArr[i][j] == 1){
+                DrawRectangleLinesEx(recArr[i][j], 2, WHITE);
+            }else{
+                DrawRectangleLinesEx(recArr[i][j], 1, squareColor);
+            }
         }
-        recY += 49;
     }
 }
 
@@ -96,7 +96,7 @@ int main() {
     // Submit Button
     int submit_btnState = 0; // 0-normal, 1-hover, 2-pressed
     bool submit_btnAction = false;
-    Rectangle submitBtn = { (float)screenWidth - 180, (float)screenHeight - 60, 160.0f, 40.0f };
+    Rectangle submitBtn = { (float)screenWidth - 180, (float)screenHeight - 34.5 - 40, 160.0f, 40.0f };
     const char* sub = "Submit";
     int textWidth = MeasureText(sub, fontSize);
     int textHeight = fontSize;
@@ -106,6 +106,19 @@ int main() {
     };
 
     // sudoku board
+    float currX = 34.5;
+    float currY = 34.5;
+    Rectangle recArr[9][9];
+    for(int i = 0; i < 9; i++){
+        for(int j = 0; j < 9; j++){
+            Rectangle currRect = {(float) currX, (float) currY, 60.0f, 60.0f};
+            recArr[i][j] = currRect;
+            currX += 59;
+        }
+        currX = 34.5;
+        currY += 59;
+    }
+
     // int** sudokuVal = makeSudoku();
 
     while (!WindowShouldClose()) {
@@ -143,11 +156,34 @@ int main() {
             min_btnState = 0;
         }
 
+        int** recColArr = calloc(9, sizeof(int*));
+        for(int i = 0; i < 9; i++){
+            recColArr[i] = (int*) calloc(9, sizeof(int));
+        }
+        
+        for(int i = 0; i < 9; i++){
+            for(int j = 0; j < 9; j++){
+                if(CheckCollisionPointRec(mousePoint, recArr[i][j])){
+                    if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)){
+                        recColArr[i][j] = 2;
+                    }else{
+                        recColArr[i][j] = 1;
+                    }
+                    if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT)){
+                        recColArr[i][j] = 3; // zapisi v ta box
+                    }
+                }else{
+                    recColArr[i][j] = 0;
+                }
+            }
+        }
+
         // Draw --------------------------------------------------------------------------
         BeginDrawing();
         ClearBackground(customBackgroundColor);
         // DrawTextEx(customFont, "\"ESC\" to exit", escPosition, 20, 0.2, customFontColor);
-        // drawGrid(customFontColor);
+        
+        drawGrid(customFontColor, recArr, recColArr);
 
         Color esc_currColor;
         if(esc_btnState == 1){
@@ -179,7 +215,7 @@ int main() {
         }else{
             submit_currColor = customFontColor;
         }
-        DrawRectangleLines(submitBtn.x, submitBtn.y, submitBtn.width, submitBtn.height, submit_currColor);
+        DrawRectangleLinesEx(submitBtn, 2, submit_currColor);
         DrawTextEx(customFont, sub, submitTxtVect, 20, 0.4, submit_currColor);
         
         // printSudoku(sudokuVal);
@@ -193,6 +229,11 @@ int main() {
         if(min_btnAction && IsCursorOnScreen()){
             MinimizeWindow();
         }
+
+        for(int i = 0; i < 9; i++){
+            free(recColArr[i]);
+        }
+        free(recColArr);
     }
 
     // free
