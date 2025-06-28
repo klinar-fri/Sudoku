@@ -17,7 +17,7 @@ void updateCursor(Vector2 mousePoint, float screenHeight, float screenWidth){
     }
 }
 
-void drawGrid(Color squareColor, Rectangle recArr[9][9], int** recColArr){
+void drawGrid(Color squareColor, Rectangle recArr[9][9], int** recColArr, int** sudokuVal, Font customFont){
     for(int i = 0; i < 9; i++){
         for(int j = 0; j < 9; j++){
             if(recColArr[i][j] == 1){
@@ -25,22 +25,21 @@ void drawGrid(Color squareColor, Rectangle recArr[9][9], int** recColArr){
             }else{
                 DrawRectangleLinesEx(recArr[i][j], 1, squareColor);
             }
-        }
-    }
-}
+            if(sudokuVal[i][j] != 0){
+                char txt[2];
+                txt[0] = sudokuVal[i][j] + '0';
+                txt[1] = '\0';
 
-void enterValues(int** board, Rectangle recArr[9][9], int** recColArr){
-    for(int i = 0; i < 9; i++){
-        for(int j = 0; j < 9; j++){
-            if(recColArr[i][j] == 3){
-                // int key = GetCharPressed();
-                // while(key > 0){
-                //     if(IsKeyDown(KEY_ENTER)){
-                //         board[i][j] = 1;
-                //         break;
-                //     }
-                // }
-                board[i][j] = 1;
+                int textWidth = MeasureText(txt, 40);
+                int textHeight = 40;
+                
+                Vector2 charPos;
+                charPos.x = (float) recArr[i][j].x + (recArr[i][j].width - textWidth) / 2.0f;
+                charPos.y = (float) recArr[i][j].y + (recArr[i][j].height - textHeight) / 2.0f;
+                if(txt[0] == '1'){
+                    charPos.x -= 6;
+                }
+                DrawTextEx(customFont, txt, charPos, 40, 0.2, WHITE);    
             }
         }
     }
@@ -61,11 +60,11 @@ void freeSudoku(int** sudokuVal){
     free(sudokuVal);
 }
 
-void printSudoku(int** board){
+void printSudoku(int** sudokuVal){
     printf("- - - - - - - - -\n");
     for(int i = 0; i < 9; i++){
         for(int j = 0; j < 9; j++){
-            printf("%d ", board[i][j]);
+            printf("%d ", sudokuVal[i][j]);
         }
         printf("\n");
     }
@@ -95,6 +94,7 @@ int main() {
         return 1;
     }
     Font customFont = LoadFontFromMemory(".ttf", fontData, dataSize, fontSize, NULL, 0);
+    Font customFontNumbers = LoadFontFromMemory(".ttf", fontData, dataSize, 40, NULL, 0);
     Vector2 escPosition = {20, 10};
 
     // Mouse
@@ -157,6 +157,9 @@ int main() {
         currY += 59;
     }
     int** sudokuVal = makeSudoku();
+    int selectedRow = 0;
+    int selectedCol = 0;
+    bool cellSelected = false;
 
     while (!WindowShouldClose()) {
         // Update
@@ -199,7 +202,8 @@ int main() {
         for(int i = 0; i < 9; i++){
             recColArr[i] = (int*) calloc(9, sizeof(int));
         }
-        
+
+
         for(int i = 0; i < 9; i++){
             for(int j = 0; j < 9; j++){
                 if(CheckCollisionPointRec(mousePoint, recArr[i][j])){
@@ -208,8 +212,10 @@ int main() {
                     }else{
                         recColArr[i][j] = 1;
                     }
-                    if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT)){
-                        recColArr[i][j] = 3; // zapisi v ta box
+                    if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
+                        selectedRow = i;
+                        selectedCol = j;
+                        cellSelected = true;
                     }
                 }else{
                     recColArr[i][j] = 0;
@@ -217,13 +223,22 @@ int main() {
             }
         }
 
+        if (cellSelected) {
+            int key = GetKeyPressed();
+            if (key >= KEY_ONE && key <= KEY_NINE) {
+            sudokuVal[selectedRow][selectedCol] = key - KEY_ZERO;
+            // printf("Entered %d at [%d][%d]\n", key - KEY_ZERO, selectedRow, selectedCol);
+            cellSelected = false;  // done
+            }
+        }
+
+
         // Draw --------------------------------------------------------------------------
         BeginDrawing();
         ClearBackground(customBackgroundColor);
         // DrawTextEx(customFont, "\"ESC\" to exit", escPosition, 20, 0.2, customFontColor);
         
-        drawGrid(customFontColor, recArr, recColArr);
-        enterValues(sudokuVal, recArr, recColArr);
+        drawGrid(customFontColor, recArr, recColArr, sudokuVal, customFontNumbers);
 
         Color esc_currColor;
         if(esc_btnState == 1){
@@ -262,6 +277,7 @@ int main() {
         EndDrawing();
 
         // -------------------------------------------------------------------------------
+
         if(esc_btnAction && IsCursorOnScreen()){
             windowClosed = true;
             CloseWindow();
