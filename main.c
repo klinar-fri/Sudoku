@@ -3,6 +3,20 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+
+void updateCursor(Vector2 mousePoint, float screenHeight, float screenWidth){
+    if((mousePoint.y >= 34.5 && mousePoint.y <= screenHeight - 34.5)
+    && (mousePoint.x >= 34.5 && mousePoint.x <= 565.5)){
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    }else if((mousePoint.y >= 0 && mousePoint.y <= 20) && (mousePoint.x >= screenWidth - 40 && mousePoint.x <= screenWidth)){
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    }else if((mousePoint.y <= screenHeight - 34.5 && mousePoint.y >= screenHeight - 74.5) && (mousePoint.x >= screenWidth - 180 && mousePoint.x <= screenWidth - 20)){
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    }else{
+        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+    }
+}
+
 void drawGrid(Color squareColor, Rectangle recArr[9][9], int** recColArr){
     for(int i = 0; i < 9; i++){
         for(int j = 0; j < 9; j++){
@@ -10,6 +24,23 @@ void drawGrid(Color squareColor, Rectangle recArr[9][9], int** recColArr){
                 DrawRectangleLinesEx(recArr[i][j], 2, WHITE);
             }else{
                 DrawRectangleLinesEx(recArr[i][j], 1, squareColor);
+            }
+        }
+    }
+}
+
+void enterValues(int** board, Rectangle recArr[9][9], int** recColArr){
+    for(int i = 0; i < 9; i++){
+        for(int j = 0; j < 9; j++){
+            if(recColArr[i][j] == 3){
+                // int key = GetCharPressed();
+                // while(key > 0){
+                //     if(IsKeyDown(KEY_ENTER)){
+                //         board[i][j] = 1;
+                //         break;
+                //     }
+                // }
+                board[i][j] = 1;
             }
         }
     }
@@ -31,7 +62,14 @@ void freeSudoku(int** sudokuVal){
 }
 
 void printSudoku(int** board){
-
+    printf("- - - - - - - - -\n");
+    for(int i = 0; i < 9; i++){
+        for(int j = 0; j < 9; j++){
+            printf("%d ", board[i][j]);
+        }
+        printf("\n");
+    }
+    printf("- - - - - - - - -\n");
 }
 
 int main() {
@@ -118,8 +156,7 @@ int main() {
         currX = 34.5;
         currY += 59;
     }
-
-    // int** sudokuVal = makeSudoku();
+    int** sudokuVal = makeSudoku();
 
     while (!WindowShouldClose()) {
         // Update
@@ -127,6 +164,8 @@ int main() {
         submit_btnAction = false;
         esc_btnAction = false;
         min_btnAction = false;
+
+        updateCursor(mousePoint, (float) screenHeight, (float) screenWidth);
         
         // Check collisions for buttons
         if(CheckCollisionPointRec(mousePoint, submitBtn)){
@@ -184,6 +223,7 @@ int main() {
         // DrawTextEx(customFont, "\"ESC\" to exit", escPosition, 20, 0.2, customFontColor);
         
         drawGrid(customFontColor, recArr, recColArr);
+        enterValues(sudokuVal, recArr, recColArr);
 
         Color esc_currColor;
         if(esc_btnState == 1){
@@ -236,12 +276,13 @@ int main() {
         free(recColArr);
     }
 
-    // free
-    // freeSudoku(sudokuVal);
-
     // close
     if(!windowClosed){
         CloseWindow();
     }
+
+    // free
+    printSudoku(sudokuVal);
+    freeSudoku(sudokuVal);
     return 0;
 }
