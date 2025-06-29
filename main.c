@@ -4,11 +4,109 @@
 #include <stdbool.h>
 
 
+bool weCanPlace(int** sudokuVal, int row, int col, int num){
+
+    // cez stolpec col
+    for(int i = 0; i < 9; i++){
+        if(sudokuVal[i][col] == num){
+            return false;
+        }
+    }
+
+    // cez vrstico row
+    for(int j = 0; j < 9; j++){
+        if(sudokuVal[row][j] == num){
+            return false;
+        }
+    }
+
+    // 3x3 del
+    int startRow = row - (row % 3);
+    int startCol = col - (col % 3);
+    for(int i = 0; i < 3; i++){
+        for(int j = 0; j < 3; j++){
+            if(sudokuVal[startRow + i][startCol + j] == num){
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+// naive-appoach, lahko bi izboljšali algoritem s bitnimi operacijami
+bool solveSudoku(int** sudokuVal, int row, int col, int n){
+    if(row == n - 1 && col == n){
+        return true;
+    }
+    if(col > 8){
+        col = 0;
+        row += 1;
+    }
+    if(sudokuVal[row][col] != 0){
+        return solveSudoku(sudokuVal, row, col + 1, n);
+    }else{
+        for(int num = 1; num <= 9; num++){
+            if(weCanPlace(sudokuVal, row, col, num)){
+                sudokuVal[row][col] = num;
+                if(solveSudoku(sudokuVal, row, col + 1, n)){
+                    return true;
+                }
+                sudokuVal[row][col] = 0;
+            }
+        }
+        return false;
+    }
+}
+
+
+bool isValid(int** sudokuVal){
+    
+    // Hash-tables
+    int rows[10][10] = {0};
+    int cols[10][10] = {0};
+    int subMat[10][10] = {0};
+
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+          
+            // Skip empty cells
+            if (sudokuVal[i][j] == 0){
+                continue;
+            }
+
+            // Current value
+            int val = sudokuVal[i][j];
+
+            // Check for duplicates in row
+            if (rows[i][val] == 1){
+                return false;
+            }
+            rows[i][val] = 1;
+
+            // Check for duplicates in column
+            if (cols[j][val] == 1){
+                return false;
+            }
+            cols[j][val] = 1;
+
+            // Check for duplicates in sub-grid
+            int idx = (i / 3) * 3 + j / 3;
+            if (subMat[idx][val] == 1){
+                return 0; 
+            }
+            subMat[idx][val] = 1;
+        }
+    }
+
+    return true;
+}
+
 void updateCursor(Vector2 mousePoint, float screenHeight, float screenWidth){
     if((mousePoint.y >= 34.5 && mousePoint.y <= screenHeight - 34.5)
     && (mousePoint.x >= 34.5 && mousePoint.x <= 565.5)){
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-    }else if((mousePoint.y >= 0 && mousePoint.y <= 20) && (mousePoint.x >= screenWidth - 40 && mousePoint.x <= screenWidth)){
+    }else if((mousePoint.y >= 0 && mousePoint.y <= 20) && (mousePoint.x >= screenWidth - 100 && mousePoint.x <= screenWidth)){
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
     }else if((mousePoint.y <= screenHeight - 34.5 && mousePoint.y >= screenHeight - 74.5) && (mousePoint.x >= screenWidth - 180 && mousePoint.x <= screenWidth - 20)){
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
@@ -95,6 +193,7 @@ int main() {
     }
     Font customFont = LoadFontFromMemory(".ttf", fontData, dataSize, fontSize, NULL, 0);
     Font customFontNumbers = LoadFontFromMemory(".ttf", fontData, dataSize, 40, NULL, 0);
+    Font customFontCla = LoadFontFromMemory(".ttf", fontData, dataSize, 18, NULL, 0);
     Vector2 escPosition = {20, 10};
 
     // Mouse
@@ -131,6 +230,12 @@ int main() {
     Vector2 min_bl2 = {min_Btn.x + 4, min_Btn.y - 5 + min_Btn.height};
     Vector2 min_br2 = {min_Btn.x + min_Btn.width - 4, min_Btn.y - 5 + min_Btn.height};
 
+    // Clear all button
+    int cla_btnState = 0;
+    bool cla_btnAction = false;
+    Rectangle cla_Btn = {(float) screenWidth - 100, 0, 60.0f, 20.0f};
+
+
     // Submit Button
     int submit_btnState = 0; // 0-normal, 1-hover, 2-pressed
     bool submit_btnAction = false;
@@ -160,6 +265,7 @@ int main() {
     int selectedRow = 0;
     int selectedCol = 0;
     bool cellSelected = false;
+    bool noValidSolution = false;
 
     while (!WindowShouldClose()) {
         // Update
@@ -167,6 +273,7 @@ int main() {
         submit_btnAction = false;
         esc_btnAction = false;
         min_btnAction = false;
+        cla_btnAction = false;
 
         updateCursor(mousePoint, (float) screenHeight, (float) screenWidth);
         
@@ -187,6 +294,15 @@ int main() {
             if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) esc_btnAction = true;
         }else{
             esc_btnState = 0;
+        }
+
+        if(CheckCollisionPointRec(mousePoint, cla_Btn)){
+            if(IsMouseButtonDown(MOUSE_BUTTON_LEFT)) cla_btnState = 2;
+            else cla_btnState = 1;
+            
+            if(IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) cla_btnAction = true;
+        }else{
+            cla_btnState = 0;
         }
 
         if(CheckCollisionPointRec(mousePoint, min_Btn)){
@@ -225,13 +341,32 @@ int main() {
 
         if (cellSelected) {
             int key = GetKeyPressed();
-            if (key >= KEY_ONE && key <= KEY_NINE) {
+            if (key >= KEY_ZERO && key <= KEY_NINE) {
             sudokuVal[selectedRow][selectedCol] = key - KEY_ZERO;
             // printf("Entered %d at [%d][%d]\n", key - KEY_ZERO, selectedRow, selectedCol);
-            cellSelected = false;  // done
+            cellSelected = false;
+            }
+        }
+        
+        if(submit_btnAction){
+            if(isValid(sudokuVal)){
+                if(!solveSudoku(sudokuVal, 0, 0, 9)){
+                    noValidSolution = true;
+                }else{
+                    noValidSolution = false;
+                }
+            }else{
+                noValidSolution = true;
             }
         }
 
+        if(cla_btnAction){
+            for(int i = 0; i < 9; i++){
+                for(int j = 0; j < 9; j++){
+                    sudokuVal[i][j] = 0;
+                }
+            }
+        }
 
         // Draw --------------------------------------------------------------------------
         BeginDrawing();
@@ -272,6 +407,28 @@ int main() {
         }
         DrawRectangleLinesEx(submitBtn, 2, submit_currColor);
         DrawTextEx(customFont, sub, submitTxtVect, 20, 0.4, submit_currColor);
+
+        Color cla_currColor;
+        if(cla_btnState == 1){
+            cla_currColor = WHITE;
+        }else{
+            cla_currColor = customFontColor;
+        }
+        DrawRectangleLinesEx(cla_Btn, 1, cla_currColor);
+        char* txt = "clear";
+        int claTxtWidth = MeasureText(txt, 18);
+        int claTxtHeight = 18;
+        Vector2 claTxtVect = {
+            cla_Btn.x + (cla_Btn.width - claTxtWidth) / 2 + 2,
+            cla_Btn.y + (cla_Btn.height - claTxtHeight) / 2
+        };
+        DrawTextEx(customFontCla, "clear", claTxtVect, 18, 0, cla_currColor);
+        
+        if(noValidSolution){
+            char* notValidTxt = "Not a valid sudoku";
+            Vector2 noValSolTxtPos = {submitBtn.x, submitBtn.y - 25};
+            DrawTextEx(customFont, notValidTxt, noValSolTxtPos, 20, 0 , RED);
+        }
         
         // printSudoku(sudokuVal);
         EndDrawing();
@@ -298,7 +455,7 @@ int main() {
     }
 
     // free
-    printSudoku(sudokuVal);
+    // printSudoku(sudokuVal);
     freeSudoku(sudokuVal);
     return 0;
 }
