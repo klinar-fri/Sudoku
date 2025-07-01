@@ -248,6 +248,26 @@ int main() {
         submitBtn.y + (submitBtn.height - textHeight) / 2
     };
 
+    // grid diff colors
+    Vector2 line1Start = {34.5, 34.5};
+    Vector2 line1End = {565.5, 34.5};
+    Vector2 line2Start = {34.5, line1Start.y + 3*59};
+    Vector2 line2End = {565.5, line1Start.y + 3*59};
+    Vector2 line3Start = {34.5, line2Start.y + 3*59};
+    Vector2 line3End = {565.5, line2Start.y + 3*59};
+    Vector2 line4Start = {34.5, line3Start.y + 3*59};
+    Vector2 line4End = {565.5, line3Start.y + 3*59};
+
+    Vector2 line5Start = {34.5, 34.5};
+    Vector2 line5End = {34.5, 565.5};
+    Vector2 line6Start = {line5Start.x + 3*59, 34.5};
+    Vector2 line6End = {line5Start.x + 3*59, 565.5};
+    Vector2 line7Start = {line6Start.x + 3*59, 34.5};
+    Vector2 line7End = {line6Start.x + 3*59, 565.5};
+    Vector2 line8Start = {line7Start.x + 3*59, 34.5};
+    Vector2 line8End = {line7Start.x + 3*59, 565.5};
+
+
     // sudoku board
     float currX = 34.5;
     float currY = 34.5;
@@ -375,6 +395,15 @@ int main() {
         
         drawGrid(customFontColor, recArr, recColArr, sudokuVal, customFontNumbers);
 
+        DrawLineEx(line1Start, line1End, 1, WHITE);
+        DrawLineEx(line2Start, line2End, 1, WHITE);
+        DrawLineEx(line3Start, line3End, 1, WHITE);
+        DrawLineEx(line4Start, line4End, 1, WHITE);
+        DrawLineEx(line5Start, line5End, 1, WHITE);
+        DrawLineEx(line6Start, line6End, 1, WHITE);
+        DrawLineEx(line7Start, line7End, 1, WHITE);
+        DrawLineEx(line8Start, line8End, 1, WHITE);
+
         Color esc_currColor;
         if(esc_btnState == 1){
             esc_currColor = WHITE;
@@ -430,6 +459,8 @@ int main() {
             DrawTextEx(customFont, notValidTxt, noValSolTxtPos, 20, 0 , RED);
         }
         
+
+
         // printSudoku(sudokuVal);
         EndDrawing();
 
